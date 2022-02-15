@@ -421,7 +421,7 @@ async def test_group_send_with_auto_discard_full_channels(
         channel_layer_with_option_auto_discard_full_channels, caplog
 ):
     """
-    Tests when the AUTO_DISCARD_FULL_CHANNELS option is enabled, a full channel is discarded
+    Tests when the should_auto_discard_full_channels option is enabled, a full channel is discarded
     """
     channel_layer = channel_layer_with_option_auto_discard_full_channels
 
