@@ -699,18 +699,27 @@ class RedisChannelLayer(BaseChannelLayer):
             # __asgi_channel__ key.
 
             group_send_lua = """
-                local over_capacity = 0
+                local channels_over_capacity = {}
                 local current_time = ARGV[#ARGV - 1]
                 local expiry = ARGV[#ARGV]
                 for i=1,#KEYS do
-                    if redis.call('ZCOUNT', KEYS[i], '-inf', '+inf') < tonumber(ARGV[i + #KEYS]) then
-                        redis.call('ZADD', KEYS[i], current_time, ARGV[i])
-                        redis.call('EXPIRE', KEYS[i], expiry)
+                    local channel_capacity = tonumber(ARGV[i + #KEYS])
+                    local channel_name = KEYS[i]
+                    local member = ARGV[i]
+                    local num_messages_in_channel = redis.call('ZCOUNT', channel_name, '-inf', '+inf')
+                    if num_messages_in_channel < channel_capacity then
+                        -- Add the member (the message) to the Redis set (our channel)
+                        redis.call('ZADD', channel_name, current_time, member)
+                        -- Update the channel's expiration time (TTL)
+                        redis.call('EXPIRE', channel_name, expiry)
                     else
-                        over_capacity = over_capacity + 1
+                        -- Note: Since Lua uses "tables" (associative arrays) the indexes are not
+                        -- equivalent to standard Python indexes, but it will still be returned as
+                        -- a list in Python.
+                        channels_over_capacity[i] = channel_name
                     end
                 end
-                return over_capacity
+                return channels_over_capacity
             """
 
             # We need to filter the messages to keep those related to the connection
@@ -725,6 +734,7 @@ class RedisChannelLayer(BaseChannelLayer):
                 for channel_key in channel_redis_keys
             ]
 
+            # Additional arguments to be accessed by indexes from the end of the args list
             args += [time.time(), self.expiry]
 
             # channel_keys does not contain a single redis key more than once
@@ -732,10 +742,10 @@ class RedisChannelLayer(BaseChannelLayer):
                 channels_over_capacity = await connection.eval(
                     group_send_lua, keys=channel_redis_keys, args=args
                 )
-                if channels_over_capacity > 0:
+                if len(channels_over_capacity) > 0:
                     logger.info(
                         "%s of %s channels over capacity in group %s",
-                        channels_over_capacity,
+                        len(channels_over_capacity),
                         len(channel_names),
                         group,
                     )
