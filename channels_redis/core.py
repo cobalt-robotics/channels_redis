@@ -747,8 +747,12 @@ class RedisChannelLayer(BaseChannelLayer):
                     group_send_lua, keys=channel_redis_keys, args=args
                 )
                 assert isinstance(channels_over_capacity, list)
-                channels_over_capacity = [val.decode('UTF-8') for val in channels_over_capacity]
-                channels_over_capacity = [channel_keys_to_channel_name[val] for val in channels_over_capacity]
+                channels_over_capacity = [
+                    val.decode("UTF-8") for val in channels_over_capacity
+                ]
+                channels_over_capacity = [
+                    channel_keys_to_channel_name[val] for val in channels_over_capacity
+                ]
                 if self.should_auto_discard_full_channel:
                     for channel_over_capacity in channels_over_capacity:
                         logger.info(
