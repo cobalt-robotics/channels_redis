@@ -236,6 +236,7 @@ class RedisChannelLayer(BaseChannelLayer):
         capacity=100,
         channel_capacity=None,
         symmetric_encryption_keys=None,
+        should_auto_discard_full_channels=False,
     ):
         # Store basic information
         self.expiry = expiry
