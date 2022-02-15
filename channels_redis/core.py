@@ -743,28 +743,29 @@ class RedisChannelLayer(BaseChannelLayer):
 
             # channel_keys does not contain a single redis key more than once
             async with self.connection(connection_index) as connection:
-                channels_over_capacity = await connection.eval(
+                channel_keys_over_capacity_binary = await connection.eval(
                     group_send_lua, keys=channel_redis_keys, args=args
                 )
-                assert isinstance(channels_over_capacity, list)
-                channels_over_capacity = [
-                    val.decode("UTF-8") for val in channels_over_capacity
+                assert isinstance(channel_keys_over_capacity_binary, list)
+                # The executed Lua script returns strings as binary, so convert to unicode.
+                channel_keys_over_capacity_unicode = [
+                    val.decode("UTF-8") for val in channel_keys_over_capacity_binary
                 ]
-                channels_over_capacity = [
-                    channel_keys_to_channel_name[val] for val in channels_over_capacity
+                channel_names_over_capacity = [
+                    channel_keys_to_channel_name[val] for val in channel_keys_over_capacity_unicode
                 ]
                 if self.should_auto_discard_full_channel:
-                    for channel_over_capacity in channels_over_capacity:
+                    for channel_over_capacity in channel_names_over_capacity:
                         logger.info(
                             "Channel %s over capacity. Discarding it from group %s.",
                             channel_over_capacity,
                             group,
                         )
                         await self.group_discard(group, channel_over_capacity)
-                elif len(channels_over_capacity) > 0:
+                elif len(channel_names_over_capacity) > 0:
                     logger.info(
                         "%s of %s channels over capacity in group %s",
-                        len(channels_over_capacity),
+                        len(channel_names_over_capacity),
                         len(channel_names),
                         group,
                     )
