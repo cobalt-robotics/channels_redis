@@ -385,6 +385,8 @@ async def test_group_send_capacity_multiple_channels(channel_layer, caplog):
     Makes sure we dont group_send messages to channels that are over capacity
     Make sure number of channels with full capacity are logged as an exception to help debug errors.
     """
+    caplog.set_level(logging.INFO)
+
     channel_1 = await channel_layer.new_channel()
     channel_2 = await channel_layer.new_channel(prefix="channel_2")
     await channel_layer.group_add("test-group", channel_1)
@@ -429,6 +431,8 @@ async def test_group_send_with_auto_discard_full_channels(
     """
     Tests when the should_auto_discard_full_channels option is enabled, a full channel is discarded
     """
+    caplog.set_level(logging.INFO)
+
     channel_layer = channel_layer_with_option_auto_discard_full_channels
 
     channel_1 = await channel_layer.new_channel()
