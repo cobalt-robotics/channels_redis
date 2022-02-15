@@ -1,5 +1,7 @@
 import asyncio
+import logging
 import random
+import re
 
 import async_timeout
 import pytest
@@ -383,7 +385,6 @@ async def test_group_send_capacity_multiple_channels(channel_layer, caplog):
     Makes sure we dont group_send messages to channels that are over capacity
     Make sure number of channels with full capacity are logged as an exception to help debug errors.
     """
-
     channel_1 = await channel_layer.new_channel()
     channel_2 = await channel_layer.new_channel(prefix="channel_2")
     await channel_layer.group_add("test-group", channel_1)
@@ -412,22 +413,17 @@ async def test_group_send_capacity_multiple_channels(channel_layer, caplog):
             await channel_layer.receive(channel_2)
 
     # Make sure number of channels over capacity are logged
-    for record in caplog.records:
-        assert record.levelname == "INFO"
-        assert (
-            record.getMessage() == "1 of 2 channels over capacity in group test-group"
-        )
+    assert caplog.record_tuples == [("channels_redis.core", logging.INFO, "1 of 2 channels over capacity in group test-group")]
 
 
 @pytest.mark.asyncio
 async def test_group_send_with_auto_discard_full_channels(
-        channel_layer: RedisChannelLayer, channel_layer_with_option_auto_discard_full_channels, caplog
+        channel_layer_with_option_auto_discard_full_channels, caplog
 ):
     """
     Tests when the AUTO_DISCARD_FULL_CHANNELS option is enabled, a full channel is discarded
     """
-    # TODO: Uncomment
-    # channel_layer: RedisChannelLayer = channel_layer_with_option_auto_discard_full_channels
+    channel_layer = channel_layer_with_option_auto_discard_full_channels
 
     channel_1 = await channel_layer.new_channel()
     channel_2 = await channel_layer.new_channel(prefix="channel_2")
@@ -456,6 +452,11 @@ async def test_group_send_with_auto_discard_full_channels(
         async with async_timeout.timeout(1):
             await channel_layer.receive(channel_2)
 
+    # Make sure discarded channels are logged
+    assert len(caplog.records) == 1
+    assert caplog.records[0].levelname == "INFO"
+    assert re.match(r"Channel channel_2\..* over capacity. Discarding it from group test-group.", caplog.records[0].message)
+
     # Make sure channel_1 still receives a new message, while channel_2 does not (because it is
     # no longer part of the group)
     await channel_layer.group_send("test-group", {"type": "message.4"})
@@ -463,13 +464,6 @@ async def test_group_send_with_auto_discard_full_channels(
     with pytest.raises(asyncio.TimeoutError):
         async with async_timeout.timeout(1):
             await channel_layer.receive(channel_2)
-
-    # Make sure discarded channels are logged
-    for record in caplog.records:
-        assert record.levelname == "INFO"
-        assert (
-                record.getMessage() == "Channel channel_2 over capacity. Discarding it from group test-group."
-        )
 
 
 @pytest.mark.asyncio
