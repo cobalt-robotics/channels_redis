@@ -752,7 +752,8 @@ class RedisChannelLayer(BaseChannelLayer):
                     val.decode("UTF-8") for val in channel_keys_over_capacity_binary
                 ]
                 channel_names_over_capacity = [
-                    channel_keys_to_channel_name[val] for val in channel_keys_over_capacity_unicode
+                    channel_keys_to_channel_name[val]
+                    for val in channel_keys_over_capacity_unicode
                 ]
                 if self.should_auto_discard_full_channel:
                     for channel_over_capacity in channel_names_over_capacity:
