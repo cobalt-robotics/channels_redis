@@ -712,8 +712,6 @@ class RedisChannelLayer(BaseChannelLayer):
                     local channel_name = KEYS[i]
                     local member = ARGV[i]
                     num_messages_in_channel = redis.call('ZCOUNT', channel_name, '-inf', '+inf')
-                    -- FIXME: remove this
-                    -- channels_over_capacity[i] = channel_name
                     if num_messages_in_channel < channel_capacity then
                         -- Add the member (the message) to the Redis set (our channel)
                         redis.call('ZADD', channel_name, current_time, member)
