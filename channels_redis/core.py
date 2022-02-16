@@ -752,6 +752,15 @@ class RedisChannelLayer(BaseChannelLayer):
                     channel_keys_to_channel_name[val]
                     for val in channel_keys_over_capacity_unicode
                 ]
+
+                if len(channel_names_over_capacity) > 0:
+                    logger.info(
+                        "%s of %s channels over capacity in group %s",
+                        len(channel_names_over_capacity),
+                        len(channel_names),
+                        group,
+                    )
+
                 if self.should_auto_discard_full_channel:
                     for channel_over_capacity in channel_names_over_capacity:
                         logger.info(
@@ -760,13 +769,6 @@ class RedisChannelLayer(BaseChannelLayer):
                             group,
                         )
                         await self.group_discard(group, channel_over_capacity)
-                elif len(channel_names_over_capacity) > 0:
-                    logger.info(
-                        "%s of %s channels over capacity in group %s",
-                        len(channel_names_over_capacity),
-                        len(channel_names),
-                        group,
-                    )
 
     def _map_channel_to_connection(self, channel_names, message):
         """

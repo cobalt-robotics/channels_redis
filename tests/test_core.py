@@ -463,11 +463,17 @@ async def test_group_send_with_auto_discard_full_channels(
             await channel_layer.receive(channel_2)
 
     # Make sure discarded channels are logged
-    assert len(caplog.records) == 1
-    assert caplog.records[0].levelname == "INFO"
+    assert len(caplog.records) == 2
+    assert caplog.record_tuples[0] == (
+        "channels_redis.core",
+        logging.INFO,
+        "1 of 2 channels over capacity in group test-group",
+    )
+
+    assert caplog.records[1].levelname == "INFO"
     assert re.match(
         r"Channel channel_2\..* over capacity. Discarding it from group test-group.",
-        caplog.records[0].message,
+        caplog.records[1].message,
     )
 
     # Make sure channel_1 still receives a new message, while channel_2 does not (because it is
