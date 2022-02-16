@@ -701,7 +701,6 @@ class RedisChannelLayer(BaseChannelLayer):
             # stored in channel_to_message dict and contains the
             # __asgi_channel__ key.
 
-            # FIXME: Something is wrong in this script. No over-capacity channels are flagged.
             group_send_lua = """
                 local channels_over_capacity = {}
                 local current_time = ARGV[#ARGV - 1]
