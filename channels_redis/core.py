@@ -244,7 +244,7 @@ class RedisChannelLayer(BaseChannelLayer):
         self.capacity = capacity
         self.channel_capacity = self.compile_capacities(channel_capacity or {})
         self.prefix = prefix
-        self.should_auto_discard_full_channel = should_auto_discard_full_channels
+        self.should_auto_discard_full_channels = should_auto_discard_full_channels
         assert isinstance(self.prefix, str), "Prefix must be unicode"
         # Configure the host objects
         self.hosts = self.decode_hosts(hosts)
@@ -761,7 +761,7 @@ class RedisChannelLayer(BaseChannelLayer):
                         group,
                     )
 
-                if self.should_auto_discard_full_channel:
+                if self.should_auto_discard_full_channels:
                     for channel_over_capacity in channel_names_over_capacity:
                         logger.info(
                             "Channel %s over capacity. Discarding it from group %s.",
